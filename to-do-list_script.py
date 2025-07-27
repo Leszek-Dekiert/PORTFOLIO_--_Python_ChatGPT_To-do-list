@@ -59,18 +59,6 @@ def remove_empty_paragraphs(file_path):
         f.writelines(cleaned_lines)
 
 
-# Function for index finding for chosen entries
-# (made with help from ChatGPT)
-def find_entry_index(entry_number):
-    pattern = rf"^{entry_number}\."
-    with open(file_path, "r") as file:
-        lines = file.readlines()
-    for index, line in enumerate(lines):
-        if re.match(pattern, line.strip()):
-            return index
-    return None
-
-
 # Function for extracting all entry Id's (made with help from ChatGPT)
 def extract_leading_digits(texts):
     all_numbers = []
@@ -88,20 +76,21 @@ def get_number(line):
     return matching.group(1) if matching else None
 
 
-index_to_roman_number = {"1": "I", "2": "II", "3": "III"}
-
-# Function for data extraction (made with help from ChatGPT)
+# Function for parsing entries into numerical priority, ID, date, text, and 
+# returning them as a tuple for structured processing (made with help from ChatGPT)
 def parse_entry(line):
     match = re.match(
-        r"(\d+)\.\s*(.*)\s*-\s*(\d{2}\.\d{2}\.\d{4})\s*-\s*" "([IVXLCDM]+)$",
+        r"(\d+)\.\s*(.*)\s*-\s*(\d{2}\.\d{2}\.\d{4})\s*-\s*([IVXLCDM]+)$",
         line.strip(),
     )
     if match:
         unique_number = int(match.group(1))
         text = match.group(2).strip()
         date = datetime.strptime(match.group(3), "%d.%m.%Y")
-        roman_number = index_to_roman_number.get(match.group(4))
-        return (roman_number, unique_number, date, text, line.strip())
+        roman_priority = match.group(4)
+        priority_map = {"I": 1, "II": 2, "III": 3}
+        priority_value = priority_map.get(roman_priority)
+        return (priority_value, unique_number, date, text, line.strip())
     return None
 
 
@@ -197,6 +186,7 @@ while opening != "6":
             "For medium (II) priority, press 2\n"
             "For lowest (III) priority, press 3\n"
         )
+        priority = ""
         if priority_choice == "1":
             priority = "I"
         elif priority_choice == "2":
@@ -204,7 +194,8 @@ while opening != "6":
         elif priority_choice == "3":
             priority = "III"
         else:
-            "Error. You need to set the priority between 1 and 3"
+            print("Error. You need to set the priority between 1 and 3")
+            break
         today = datetime.today().strftime("%d.%m.%Y")
         with open(file_path, "a") as file:
             file.write(f"\n{number_of_entry}. {entry} - {today} - {priority}")
@@ -241,11 +232,11 @@ while opening != "6":
             )
             with open(file_path, "r") as file:
                 all_numbers = extract_leading_digits(file)
+                number_change = int(number_change)
             if number_change in all_numbers:
                 new_entry = input(
                     "Write a new entry You would like to replace the old one with: "
                 )
-                index_change = find_entry_index(f"{number_change}")
                 new_today = datetime.today().strftime("%d.%m.%Y")
                 new_priority_choice = input(
                     "Set a priority for Your new entry:\n"
@@ -253,6 +244,7 @@ while opening != "6":
                     "For medium (II) priority, press 2\n"
                     "For lowest (III) priority, press 3\n"
                 )
+                new_priority = ""
                 if new_priority_choice == "1":
                     new_priority = "I"
                 elif new_priority_choice == "2":
@@ -261,6 +253,7 @@ while opening != "6":
                     new_priority = "III"
                 else:
                     "Error. You need to set the priority between 1 and 3"
+                    break
                 update_entry_in_file(
                     file_path, number_change, new_entry, new_today, new_priority
                 )
@@ -289,3 +282,4 @@ while opening != "6":
     # Instruction for wrong input
     else:
         print("\nWrong instruction. Exiting the program.")
+        break
